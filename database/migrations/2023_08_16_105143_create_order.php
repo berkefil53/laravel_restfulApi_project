@@ -16,8 +16,8 @@ class CreateOrder extends Migration
         Schema::create('order', function (Blueprint $table) {
             $table->id();
             $table->integer('user_id');
-            $table->json('order_register');
             $table->double('price');
+            $table->double('discount_price');
             $table->timestamps();
         });
     }

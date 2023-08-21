@@ -19,7 +19,7 @@ class ProductSeeder extends Seeder
                 'title' => $item->title,
                 'category_id' => $item->category_id,
                 'category_title' => $item->category_title,
-                'author' => $item->author,
+                'author_id' => $item->author_id,
                 'list_price' => $item->list_price,
                 'stock_quantity' => $item->stock_quantity,
                 'created_at' => now(),

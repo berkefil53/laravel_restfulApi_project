@@ -22,5 +22,9 @@ class User extends Authenticatable
     protected $fillable = [
         'username',
     ];
+    public function getOrder()
+    {
+        return $this->hasOne(Order::class);
+    }
 
 }

@@ -9,8 +9,8 @@ class Product extends Model
 {
     use HasFactory;
     protected  $table='product';
-
     protected $fillable = [
-        'title','category_id','category_title','author','list_price','stock_quantity',
+        'title','category_id','category_title','author_id','list_price','stock_quantity',
     ];
+
 }
