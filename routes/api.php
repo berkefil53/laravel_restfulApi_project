@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\CampaignController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -23,4 +24,7 @@ Route::controller(ProductController::class)->group(function () {
 });
 Route::controller(OrderController::class)->group(function () {
     Route::post('/createOrder', 'createOrder');
+});
+Route::controller(OrderController::class)->group(function () {
+    Route::post('/orderDetail/{orderNumber}', 'orderDetail');
 });

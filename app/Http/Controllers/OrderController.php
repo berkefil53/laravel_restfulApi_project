@@ -1,6 +1,5 @@
 <?php
 namespace App\Http\Controllers;
-
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Author;
@@ -9,8 +8,7 @@ use App\Models\OrderProduct;
 use App\Models\Campaign;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use function Illuminate\Events\queueable;
-
+use App\Http\Controllers\CampaignController;
 class OrderController extends Controller
 {
     public function createOrder(Request $request)
@@ -63,22 +61,20 @@ class OrderController extends Controller
                 break;
             }
 
-            $price += $requestedQuantity * $product->list_price;
-        }
-
-
-        $discount=$this->applyBestCampaign($orderItems,$price);
-        $discount=$price-$discount;
-        if ($discount <= 50) {
-            $discount += 10;
+            // Ürün fiyatı ve miktarını çarpıp toplama ekle
+            $price += $product->list_price * $requestedQuantity;
         }
         if (!$allProductsAvailable) {
             return response()->json(['message' => 'Bazı ürünler stokta yok veya yetersiz. Sipariş alınamadı.'], 400);
         }
 
+        $discount=(new CampaignController)->applyBestCampaign($orderItems,$price);
+        $discount=$price-$discount;
+        if ($discount <= 50) {
+            $discount += 10;
+        }
         return $this->productOrder($user, $orderItems,$price,$discount);
     }
-
     private function productOrder($user, $orderItems, $price,$discount)
     {
         foreach ($orderItems as $item) {
@@ -91,6 +87,7 @@ class OrderController extends Controller
             'price'=>$price,
             'discount_price' => $discount
         ]);
+        $orderNumber=$order->id;
         foreach ($orderItems as $item) {
             $product = Product::find($item['id']);
             $order->products()->attach($item['id'], [
@@ -101,61 +98,36 @@ class OrderController extends Controller
             ]);
         }
 
-        return response()->json(['message' => $user->username . "'ın siparişi alındı tutar: " . $price], 200);
+        return $this->orderDetail($orderNumber);
     }
-    public function applyBestCampaign($orderItems,$total_price){
-        $campaigns = Campaign::all();
-        $discountAmount = [];
-        $discount=0;
-        foreach ($campaigns as $campaign) {
-            $min_condition= $campaign->min_condition;
-            switch($campaign->discount_type){
-                case 1: // Sabahattin Ali'nin Roman kitaplarında 2 üründen 1 tanesi bedava
-                    $counter = 0;
-                    $cheapest_book = null;
-                    foreach ($orderItems as $item)
-                    {
-                        $author_id=$campaign->conditions["author_id"];
-                        $category_id=$campaign->conditions["category_id"];
-                        $product = Product::find($item['id']);
-                        if($product->author_id == $author_id && $product->category_id == $category_id) {
-                            $counter += $item['stock_quantity'];
-                            if ($cheapest_book == null || $product->list_price < $cheapest_book)//en düşük fiyatlı kitap
-                                $cheapest_book = $product->list_price;
-                        }
-                    }
-                    if($counter >= $campaign->min_condition){
-                        $discountAmount[] = $cheapest_book*$campaign->gift_condition;
-                    }
-                    break;
-                case 2: //
-                    if($min_condition>0)
-                    {
-                        $total_discount = 0;
-                        if ($total_price>=$min_condition)
-                        {
-                            $total_discount=$campaign->gift_condition*$total_price/100;
-                        }
-                        $discountAmount[]=$total_discount;
-                    }
-                    else {
-                        $author_local=$campaign->conditions["author_local"];
-                        $total_discount=0;
-                        foreach ($orderItems as $item) {
-                            $author = Author::find($item['id']);
-                            $product = Product::find($item['id']);
-                            if ($author_local == $author->author_type) {
-                                $discount = $campaign->gift_condition * $product->list_price / 100;
-                                $total_discount += $discount * $item['stock_quantity'];
-                            }
-                        }
-                        $discountAmount[] = $total_discount;
-                    }
-                    break;
-                default:
-                    break;
-            }
+    public function orderDetail($orderNumber)
+    {
+        $order = Order::where('id', $orderNumber)->first();
+
+        if (!$order) {
+            return response()->json(['message' => 'Sipariş bulunamadı.'], 404);
         }
-        return max($discountAmount);
+        $username = $order->user->username;
+        $orderProducts = $order->products;
+
+        $productDetails = []; // Bu kısmı gereksiz olduğunu varsayarak eklemeyin eğer eklemişseniz tekrar eklemenize gerek yok.
+
+        foreach ($orderProducts as $orderProduct) {
+            $productDetails[] = [
+                'product_id' => $orderProduct->id,
+                'product_title' => $orderProduct->title,
+                'product_price' => $orderProduct->pivot->product_price,
+                'product_quantity' => $orderProduct->pivot->product_quantity,
+                'category_title' => $orderProduct->category_title,
+            ];
+        }
+        $sonuc[]=$username." Kullanıcısı :";
+        for ($i = 0; $i < count($productDetails); $i++) {
+            $sonuc[] = $productDetails[$i]["product_title"] . " adlı ".$productDetails[$i]["category_title"]." kitabı ürününden ". $productDetails[$i]["product_quantity"] . " adet satın aldı."
+            ." liste fiyatı : ".$productDetails[$i]["product_price"];
+        }
+        $sonuc[]=str_repeat("-", 100);
+        return response()->json(['Sipariş Detayı' => $sonuc]);
+
     }
 }
