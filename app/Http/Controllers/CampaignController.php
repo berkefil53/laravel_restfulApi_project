@@ -34,7 +34,13 @@ class CampaignController extends Controller
                         }
                     }
                     if($counter >= $campaign->min_condition){
-                        $discountAmount[] = $cheapest_book*$campaign->gift_condition;
+                        $discountAmount[]=
+                            [
+                                'total'=> $cheapest_book * $campaign->gift_condition,
+                                'index'=>$campaign->campaign_name,
+                                'id'=>$campaign->id
+                            ];
+
                     }
                     break;
                 case 2: //
@@ -46,7 +52,12 @@ class CampaignController extends Controller
                             $total_discount=$campaign->gift_condition*$total_price/100;
 
                         }
-                        $discountAmount[]=$total_discount;
+                        $discountAmount[]=
+                            [
+                                'total'=> $total_discount,
+                                'index'=>$campaign->campaign_name,
+                                'id'=>$campaign->id
+                            ];
                     }
                     else {
                         $author_local=$campaign->conditions["author_local"];
@@ -61,7 +72,12 @@ class CampaignController extends Controller
                             }
                             $i++;
                         }
-                        $discountAmount[] = $total_discount;
+                        $discountAmount[]=
+                            [
+                                'total'=> $total_discount,
+                                'index'=>$campaign->campaign_name,
+                                'id'=>$campaign->id
+                            ];
                     }
                     break;
                 default:

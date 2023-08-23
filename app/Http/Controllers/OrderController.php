@@ -68,14 +68,16 @@ class OrderController extends Controller
             return response()->json(['message' => 'Bazı ürünler stokta yok veya yetersiz. Sipariş alınamadı.'], 400);
         }
 
-        $discount=(new CampaignController)->applyBestCampaign($orderItems,$price);
-        $discount=$price-$discount;
+        $discounts=(new CampaignController)->applyBestCampaign($orderItems,$price);
+        $campaign_name=$discounts['index'];
+        $campaign_id=$discounts['id'];
+        $discount=$price-$discounts['total'];
         if ($discount <= 50) {
             $discount += 10;
         }
-        return $this->productOrder($user, $orderItems,$price,$discount);
+        return $this->productOrder($user, $orderItems,$price,$discount,$campaign_name,$campaign_id);
     }
-    private function productOrder($user, $orderItems, $price,$discount)
+    private function productOrder($user, $orderItems, $price,$discount,$campaign_name,$campaign_id)
     {
         foreach ($orderItems as $item) {
             $product = Product::find($item['id']);
@@ -84,6 +86,7 @@ class OrderController extends Controller
             $product->save();
         }
         $order=$user->getOrder()->create([
+            'campaign_id'=>$campaign_id,
             'price'=>$price,
             'discount_price' => $discount
         ]);
@@ -98,9 +101,9 @@ class OrderController extends Controller
             ]);
         }
 
-        return $this->orderDetail($orderNumber);
+        return $this->orderDetail($orderNumber,$campaign_name,$price,$discount);
     }
-    public function orderDetail($orderNumber)
+    public function orderDetail($orderNumber,$campaign_name,$price,$discount)
     {
         $order = Order::where('id', $orderNumber)->first();
 
@@ -124,9 +127,10 @@ class OrderController extends Controller
         $sonuc[]=$username." Kullanıcısı :";
         for ($i = 0; $i < count($productDetails); $i++) {
             $sonuc[] = $productDetails[$i]["product_title"] . " adlı ".$productDetails[$i]["category_title"]." kitabı ürününden ". $productDetails[$i]["product_quantity"] . " adet satın aldı."
-            ." liste fiyatı : ".$productDetails[$i]["product_price"];
+            ." liste fiyatı : ".$productDetails[$i]["product_price"]." TL";
         }
         $sonuc[]=str_repeat("-", 100);
+        $sonuc[]="Toplam fiyat ".$price." TL olup ".$campaign_name." kampanyası kullanılması sonucu ".($price-$discount)." TL indirim sağlanılmıştır.Toplam indirimli fiyat: ".$discount." TL";
         return response()->json(['Sipariş Detayı' => $sonuc]);
 
     }

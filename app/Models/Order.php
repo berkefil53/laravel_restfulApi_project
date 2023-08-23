@@ -11,7 +11,7 @@ class Order extends Model
     protected  $table='order';
 
     protected $fillable = [
-        'user_id','order_register','price','discount_price'
+        'user_id','campaign_id','order_register','price','discount_price'
     ];
     /*
     protected function data(): Attribute
