@@ -69,9 +69,10 @@ class OrderController extends Controller
         }
 
         $discounts=(new CampaignController)->applyBestCampaign($orderItems,$price);
-        $campaign_name=$discounts['index'];
-        $campaign_id=$discounts['id'];
-        $discount=$price-$discounts['total'];
+
+        $campaign_name=$discounts[0]['index'];
+        $campaign_id=$discounts[0]['id'];
+        $discount=$price-$discounts[0]['total'];
         if ($discount <= 50) {
             $discount += 10;
         }
